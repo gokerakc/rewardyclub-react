@@ -10,7 +10,7 @@ interface RewardCardProps {
 
 export default function RewardCard({ userName, memberId }: RewardCardProps) {
   return (
-    <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
       <div className="flex items-center gap-2 mb-4">
         <QrCode className="w-5 h-5" />
         <h2 className="text-xl font-bold">Your Member Card</h2>
@@ -29,7 +29,7 @@ export default function RewardCard({ userName, memberId }: RewardCardProps) {
         </div>
       </div>
 
-      <p className="text-sm text-purple-100 mt-4 text-center">
+      <p className="text-sm text-orange-100 mt-4 text-center">
         Show this QR code to businesses to collect stamps
       </p>
     </div>

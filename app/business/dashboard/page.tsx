@@ -16,7 +16,8 @@ import { Business, Transaction } from '@/types';
 import StatsCard from '@/components/business/StatsCard';
 import QRScanner from '@/components/business/QRScanner';
 import RecentActivity from '@/components/business/RecentActivity';
-import { LogOut, Users, CreditCard, Award, QrCode, Store, AlertCircle } from 'lucide-react';
+import BusinessSettings from '@/components/business/BusinessSettings';
+import { LogOut, Users, CreditCard, Award, QrCode, Store, AlertCircle, Settings } from 'lucide-react';
 
 export default function BusinessDashboard() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -29,6 +30,7 @@ export default function BusinessDashboard() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -38,24 +40,24 @@ export default function BusinessDashboard() {
     }
   }, [user, authLoading, router]);
 
-  useEffect(() => {
-    const fetchBusiness = async () => {
-      if (!user) return;
+  const fetchBusiness = async () => {
+    if (!user) return;
 
-      try {
-        const businessData = await getBusinessByOwnerId(user.uid);
-        if (businessData) {
-          setBusiness(businessData);
-        } else {
-          setShowOnboarding(true);
-        }
-      } catch (error) {
-        console.error('Error fetching business:', error);
-      } finally {
-        setBusinessLoading(false);
+    try {
+      const businessData = await getBusinessByOwnerId(user.uid);
+      if (businessData) {
+        setBusiness(businessData);
+      } else {
+        setShowOnboarding(true);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching business:', error);
+    } finally {
+      setBusinessLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchBusiness();
   }, [user]);
 
@@ -98,6 +100,11 @@ export default function BusinessDashboard() {
     }
   };
 
+  const handleBusinessUpdate = async () => {
+    // Refetch business data from Firestore to ensure we have the latest data
+    await fetchBusiness();
+  };
+
   const handleCreateBusiness = async () => {
     if (!user) return;
 
@@ -110,7 +117,7 @@ export default function BusinessDashboard() {
         stampCardConfig: {
           totalStamps: 10,
           reward: 'Free Item',
-          colorClass: 'from-purple-500 to-indigo-600',
+          colorClass: 'from-orange-500 to-orange-600',
         },
       });
 
@@ -160,7 +167,7 @@ export default function BusinessDashboard() {
   if (authLoading || businessLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-600"></div>
       </div>
     );
   }
@@ -170,7 +177,7 @@ export default function BusinessDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl mb-4">
               <Store className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome to Rewardy Club</h1>
@@ -179,7 +186,7 @@ export default function BusinessDashboard() {
             </p>
             <button
               onClick={handleCreateBusiness}
-              className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-3 rounded-lg font-medium hover:from-purple-600 hover:to-indigo-700 transition-all"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all"
             >
               Create Business Account
             </button>
@@ -197,21 +204,38 @@ export default function BusinessDashboard() {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg p-2">
-              <Store className="w-5 h-5 text-white" />
-            </div>
+            {business.logoURL ? (
+              <img
+                src={business.logoURL}
+                alt={business.name}
+                className="w-10 h-10 rounded-lg object-cover"
+              />
+            ) : (
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-2">
+                <Store className="w-5 h-5 text-white" />
+              </div>
+            )}
             <div>
               <h1 className="text-lg font-bold text-gray-800">{business.name}</h1>
               <p className="text-sm text-gray-600 capitalize">{business.businessType}</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="text-sm font-medium">Logout</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="text-sm font-medium">Settings</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -253,8 +277,8 @@ export default function BusinessDashboard() {
             icon={CreditCard}
             label="Active Cards"
             value={business.stats.activeCards}
-            iconColor="text-purple-600"
-            bgColor="bg-purple-100"
+            iconColor="text-orange-600"
+            bgColor="bg-orange-100"
           />
           <StatsCard
             icon={Award}
@@ -268,7 +292,7 @@ export default function BusinessDashboard() {
         {/* Scan Button */}
         <button
           onClick={() => setShowScanner(true)}
-          className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg flex items-center justify-center gap-3"
+          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg flex items-center justify-center gap-3"
         >
           <QrCode className="w-6 h-6" />
           Scan Customer QR Code
@@ -286,6 +310,15 @@ export default function BusinessDashboard() {
             setShowScanner(false);
             setScanError(null);
           }}
+        />
+      )}
+
+      {/* Business Settings Modal */}
+      {showSettings && (
+        <BusinessSettings
+          business={business}
+          onClose={() => setShowSettings(false)}
+          onUpdate={handleBusinessUpdate}
         />
       )}
     </div>

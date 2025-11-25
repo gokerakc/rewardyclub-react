@@ -23,7 +23,7 @@ const transactionLabels = {
 
 const transactionColors = {
   stamp_added: 'bg-green-100 text-green-600',
-  reward_redeemed: 'bg-purple-100 text-purple-600',
+  reward_redeemed: 'bg-orange-100 text-orange-600',
   card_created: 'bg-blue-100 text-blue-600',
 };
 

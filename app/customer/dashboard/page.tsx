@@ -66,7 +66,7 @@ export default function CustomerDashboard() {
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-600"></div>
       </div>
     );
   }
@@ -77,7 +77,7 @@ export default function CustomerDashboard() {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg p-2">
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-2">
               <User className="w-5 h-5 text-white" />
             </div>
             <div>

@@ -6,6 +6,7 @@ import { BusinessType } from '@/types';
 interface StampCardProps {
   businessName: string;
   businessType: BusinessType;
+  logoURL?: string;
   totalStamps: number;
   currentStamps: number;
   reward: string;
@@ -22,6 +23,7 @@ const businessIcons: Record<BusinessType, typeof Coffee> = {
 export default function StampCard({
   businessName,
   businessType,
+  logoURL,
   totalStamps,
   currentStamps,
   reward,
@@ -35,8 +37,18 @@ export default function StampCard({
     <div className={`bg-gradient-to-br ${colorClass} rounded-xl p-5 text-white shadow-md`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Icon className="w-5 h-5" />
+        <div className="flex items-center gap-3">
+          {logoURL ? (
+            <img
+              src={logoURL}
+              alt={businessName}
+              className="w-10 h-10 rounded-lg object-cover bg-white/20 border border-white/30"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <Icon className="w-5 h-5" />
+            </div>
+          )}
           <div>
             <h3 className="font-bold text-lg">{businessName}</h3>
             <p className="text-xs text-white/80 capitalize">{businessType}</p>
@@ -72,7 +84,7 @@ export default function StampCard({
             key={index}
             className={`aspect-square rounded-lg flex items-center justify-center ${
               index < currentStamps
-                ? 'bg-white text-purple-600'
+                ? 'bg-white text-gray-800'
                 : 'bg-white/20 border border-white/40'
             }`}
           >

@@ -36,6 +36,7 @@ export interface Business {
   businessType: BusinessType;
   email: string;
   phone?: string;
+  logoURL?: string;               // Firebase Storage URL for business logo
   stampCardConfig: StampCardConfig;
   stats: BusinessStats;
   isActive: boolean;
@@ -55,6 +56,7 @@ export interface StampCard {
   businessId: string;             // References businesses.id
   businessName: string;           // Denormalized for quick display
   businessType: BusinessType;
+  logoURL?: string;               // Business logo (denormalized)
   totalStamps: number;            // From business config
   currentStamps: number;          // Current progress (0 to totalStamps)
   reward: string;                 // From business config

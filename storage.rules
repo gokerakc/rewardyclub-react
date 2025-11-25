@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if file is an image
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // Helper function to check file size (max 2MB)
+    function isValidSize() {
+      return request.resource.size < 2 * 1024 * 1024;
+    }
+
+    // Business logos
+    match /logos/{fileName} {
+      // Allow authenticated users to upload images under 2MB
+      allow write: if isAuthenticated()
+                   && isImage()
+                   && isValidSize();
+
+      // Allow anyone to read logos (public)
+      allow read: if true;
+    }
+
+    // Default: deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

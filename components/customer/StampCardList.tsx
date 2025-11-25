@@ -13,7 +13,7 @@ export default function StampCardList({ cards, loading }: StampCardListProps) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <Loader2 className="w-12 h-12 text-purple-600 animate-spin mb-4" />
+        <Loader2 className="w-12 h-12 text-orange-600 animate-spin mb-4" />
         <p className="text-gray-600">Loading your stamp cards...</p>
       </div>
     );
@@ -46,6 +46,7 @@ export default function StampCardList({ cards, loading }: StampCardListProps) {
             key={card.id}
             businessName={card.businessName}
             businessType={card.businessType}
+            logoURL={card.logoURL}
             totalStamps={card.totalStamps}
             currentStamps={card.currentStamps}
             reward={card.reward}

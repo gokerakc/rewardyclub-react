@@ -74,7 +74,7 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-white">
             <Camera className="w-5 h-5" />
             <h2 className="font-bold text-lg">Scan QR Code</h2>

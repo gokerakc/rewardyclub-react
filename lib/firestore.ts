@@ -140,6 +140,7 @@ export async function getOrCreateStampCard(
       businessId,
       businessName: business.name,
       businessType: business.businessType,
+      logoURL: business.logoURL,
       totalStamps: business.stampCardConfig.totalStamps,
       currentStamps: 0,
       reward: business.stampCardConfig.reward,
@@ -355,7 +356,7 @@ export async function createBusiness(businessData: Partial<Business>): Promise<s
       stampCardConfig: businessData.stampCardConfig || {
         totalStamps: 10,
         reward: 'Free Item',
-        colorClass: 'from-purple-500 to-indigo-600',
+        colorClass: 'from-orange-500 to-orange-600',
       },
       stats: {
         totalCustomers: 0,
@@ -372,6 +373,29 @@ export async function createBusiness(businessData: Partial<Business>): Promise<s
   } catch (error) {
     console.error('Error creating business:', error);
     throw new Error('Failed to create business');
+  }
+}
+
+export async function updateBusiness(
+  businessId: string,
+  updates: Partial<Business>
+): Promise<void> {
+  try {
+    const businessRef = doc(db, 'businesses', businessId);
+    const updateData: any = {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(
+      (key) => updateData[key] === undefined && delete updateData[key]
+    );
+
+    await updateDoc(businessRef, updateData);
+  } catch (error) {
+    console.error('Error updating business:', error);
+    throw new Error('Failed to update business settings');
   }
 }
 
