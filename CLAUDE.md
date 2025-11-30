@@ -8,14 +8,19 @@ RewardyClub is a Next.js 16 application built with React 19, TypeScript, and Tai
 
 **Brand**: Orange color scheme (#ea580c) throughout the application.
 
-**Status**: Phase 2 Complete - Full-featured MVP with:
+**Status**: Phase 3 Complete - Production-ready platform with subscription monetization:
 - ✅ Landing page with product value proposition
 - ✅ Authentication (Google OAuth) with user type selection
 - ✅ Customer dashboard with QR code and real-time stamp cards
 - ✅ Business dashboard with QR scanner, statistics, and activity feed
 - ✅ Business settings with logo upload, stamp configuration, and reward management
 - ✅ Firebase Storage integration for business logos
+- ✅ **Subscription system with Stripe (Free/Pro tiers)**
+- ✅ **Feature gating and usage limits enforcement**
+- ✅ **Stripe Checkout and Customer Portal integration**
+- ✅ **Webhook handler for subscription lifecycle events**
 - ✅ Firestore composite indexes for optimized queries
+- ✅ Secure Firestore rules preventing client tampering
 - ✅ Responsive mobile-first design
 
 ## Development Commands
@@ -25,7 +30,9 @@ RewardyClub is a Next.js 16 application built with React 19, TypeScript, and Tai
 - **Start production server**: `npm start`
 - **Run linter**: `npm run lint`
 
-## Firebase Setup Required
+## Setup Required
+
+### Firebase Setup
 
 Before running the application, you need to:
 
@@ -38,10 +45,51 @@ Before running the application, you need to:
 7. Deploy Firestore indexes: `firebase deploy --only firestore:indexes`
 8. Deploy Storage security rules: `firebase deploy --only storage`
 9. Configure Storage CORS (see below)
+10. **Download Firebase Admin SDK service account key** (for webhooks)
 
 The `.env.local` file contains placeholder values that must be replaced with your actual Firebase credentials.
 
 **Important**: The Firestore indexes are required for queries with multiple where clauses and orderBy. If you get an error saying "The query requires an index", make sure you've deployed the indexes from `firestore.indexes.json`.
+
+### Stripe Setup (for Subscription System)
+
+1. Create a Stripe account at https://stripe.com
+2. Switch to **Test Mode** (toggle in top right)
+3. Create a product "RewardyClub Pro":
+   - Price 1: £15.00/month recurring
+   - Price 2: £150.00/year recurring
+4. Copy API keys and Price IDs to `.env.local`
+5. Set up webhook endpoint (for local testing):
+   ```bash
+   stripe listen --forward-to localhost:3000/api/stripe/webhook
+   ```
+6. Copy webhook secret to `.env.local`
+
+### Environment Variables
+
+Add these to `.env.local`:
+
+```env
+# Firebase Client SDK
+NEXT_PUBLIC_FIREBASE_API_KEY=your_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# Firebase Admin SDK (for webhooks)
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+
+# Stripe
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PRICE_ID_MONTHLY=price_...
+NEXT_PUBLIC_STRIPE_PRICE_ID_YEARLY=price_...
+```
+
+**Security**: Never commit `.env.local` to git. It's already in `.gitignore`.
 
 ### Firebase Storage CORS Configuration
 
@@ -80,11 +128,17 @@ Replace `YOUR_PROJECT_ID` with your Firebase project ID and `YOUR_BUCKET_NAME` w
 
 This project uses Next.js App Router (not Pages Router). All routes are defined in the `app/` directory:
 
+**Pages:**
 - `app/page.tsx` - Landing page explaining the product value proposition
 - `app/login/page.tsx` - Login page with Google OAuth and user type selection
 - `app/layout.tsx` - Root layout wrapped with AuthProvider (Geist Sans & Geist Mono fonts)
 - `app/customer/dashboard/page.tsx` - Customer dashboard showing QR code and stamp cards
 - `app/business/dashboard/page.tsx` - Business dashboard with QR scanner and statistics
+
+**API Routes:** (Server-side, using Firebase Admin SDK and Stripe)
+- `app/api/stripe/create-checkout/route.ts` - Creates Stripe Checkout session for Pro upgrade
+- `app/api/stripe/create-portal/route.ts` - Creates Stripe Customer Portal session for billing management
+- `app/api/stripe/webhook/route.ts` - Handles Stripe webhook events (subscription lifecycle)
 
 ### Component Architecture
 
@@ -100,6 +154,10 @@ Components are organized by feature:
 - `QRScanner.tsx` - Camera-based QR code scanner using html5-qrcode
 - `RecentActivity.tsx` - Transaction feed showing recent stamp additions
 - `BusinessSettings.tsx` - Settings modal for logo upload, business name, stamp count, and reward configuration
+- **`SubscriptionBadge.tsx`** - Shows Free/Pro tier badge in dashboard header
+- **`UpgradeModal.tsx`** - Pricing comparison and Stripe Checkout integration
+- **`UsageStats.tsx`** - Progress bars for Free tier limits (customers, monthly stamps)
+- **`BillingManagement.tsx`** - Stripe Customer Portal integration for Pro users
 
 ### Core Libraries and Data Layer
 
@@ -108,12 +166,30 @@ Components are organized by feature:
 - Enables offline persistence for better mobile experience
 - Exports `auth`, `db`, `storage`, and `googleProvider`
 
+**Firebase Admin SDK** (`lib/firebase-admin.ts`):
+- Server-side Firebase with full database access (bypasses security rules)
+- Used by API routes and webhooks
+- Supports service account credentials or application default credentials
+- Exports `adminDb`, `adminAuth`
+
 **Database Helpers** (`lib/firestore.ts`):
 - User management: `createUser()`, `getUser()`, `getUserByMemberId()`
 - Stamp cards: `getUserStampCards()`, `getOrCreateStampCard()`, `addStampToCard()`
 - Business: `getBusinessByOwnerId()`, `createBusiness()`, `updateBusiness()`, `getBusinessStats()`
 - Transactions: `logTransaction()`, `getRecentTransactions()`
 - Member ID generation: Format `RC-YYYY-XXXXXX` (e.g., RC-2024-789456)
+- **Subscription limit enforcement**: Checks customer and monthly stamp limits before operations
+
+**Stripe Integration** (`lib/stripe.ts`):
+- Initializes Stripe with secret key (server-side only)
+- Exports `stripe` instance and price ID constants
+- Used by API routes for checkout and portal session creation
+
+**Subscription Helpers** (`lib/subscription.ts`):
+- Helper functions: `isPro()`, `canAddCustomer()`, `canAddStamp()`, `canUploadLogo()`
+- Default tier configurations: `getDefaultUsage()`, `getProUsage()`
+- Usage calculations: `getUsagePercentage()`, `isApproachingLimit()`
+- Monthly stamp reset logic: `shouldResetMonthlyStamps()`
 
 **Authentication** (`contexts/AuthContext.tsx`):
 - Global auth state using React Context
@@ -123,6 +199,7 @@ Components are organized by feature:
 
 **Type Definitions** (`types/index.ts`):
 - Full TypeScript interfaces for User, Business, StampCard, Transaction
+- **Subscription types**: SubscriptionData, UsageLimits, SubscriptionTier, SubscriptionStatus
 - Ensures type safety across the application
 
 ### Client vs Server Components
@@ -157,25 +234,61 @@ Components are organized by feature:
 - **Reward Visibility**: Clear display of rewards and completion status
 
 ### For Businesses
-- **QR Code Scanning**: Scan customer QR codes with device camera (html5-qrcode)
-- **Business Settings**:
-  - Upload custom logo (Firebase Storage, max 2MB)
-  - Configure stamp count (3-50 stamps)
-  - Set custom reward text
-  - Update business name
-- **Dashboard Analytics**: Track customers, active cards, and stamps issued
-- **Activity Feed**: Real-time transaction history
-- **Simple Onboarding**: Create account in under 5 minutes
+
+**Free Tier:**
+- QR Code Scanning (unlimited)
+- 50 customers maximum
+- 500 monthly stamps
+- Fixed 10 stamps per card
+- Last 10 transactions visible
+- Basic analytics dashboard
+
+**Pro Tier (£15/month or £150/year):**
+- Unlimited customers
+- Unlimited monthly stamps
+- Custom logo upload (Firebase Storage, max 2MB)
+- Configurable stamp count (3-50 stamps)
+- Last 100 transactions
+- Advanced analytics
+- Stripe Customer Portal for billing management
+
+**All Tiers Include:**
+- Real-time QR code scanning with html5-qrcode
+- Business settings customization
+- Real-time transaction feed
+- Simple onboarding (under 5 minutes)
 
 ## Important Business Logic
 
-### Stamp Validation Rules (lib/firestore.ts:179-211)
+### Stamp Validation Rules (lib/firestore.ts)
 
 The `addStampToCard()` function implements these validations:
 - **Cooldown period**: 15 minutes between stamps (same customer, same business)
 - **Stamp limit**: Cannot exceed `totalStamps` configured for the card
 - **Completed cards**: Cannot add stamps to completed or redeemed cards
 - **Auto-completion**: Card is marked complete when `currentStamps === totalStamps`
+- **Monthly stamp limit**: Free tier limited to 500 stamps/month, resets after 30 days
+- **Auto-reset**: Monthly stamp counter resets automatically after 30 days from `monthStartedAt`
+
+### Subscription Limit Enforcement (lib/firestore.ts)
+
+**Customer Limit** (`getOrCreateStampCard()`):
+- Free tier: Maximum 50 unique customers
+- Pro tier: Unlimited customers
+- Error thrown: `LIMIT_CUSTOMERS` when limit reached
+- Enforcement point: Before creating new stamp card for new customer
+
+**Monthly Stamp Limit** (`addStampToCard()`):
+- Free tier: Maximum 500 stamps per month
+- Pro tier: Unlimited stamps
+- Error thrown: `LIMIT_MONTHLY_STAMPS` when limit reached
+- Enforcement point: Before adding stamp to card
+- Auto-reset: After 30 days from `usage.monthStartedAt`
+
+**Downgrade Behavior**:
+- When Pro downgrades to Free, existing data is preserved
+- New operations blocked if over Free tier limits
+- Example: 100 customers kept, but can't add 101st until under 50
 
 ### Member ID Format
 
@@ -212,8 +325,51 @@ The `addStampToCard()` function implements these validations:
 
 ## Configuration Files
 
-- `firestore.rules` - Firestore security rules
+**Firebase:**
+- `firestore.rules` - Firestore security rules (protects subscription/usage fields from client modification)
 - `firestore.indexes.json` - Composite indexes for complex queries
 - `storage.rules` - Firebase Storage security rules (images only, 2MB max, authenticated uploads)
 - `storage.cors.json` - CORS configuration for Storage (allows localhost and production domains)
 - `firebase.json` - Firebase deployment configuration
+
+**Environment:**
+- `.env.local` - Environment variables (Firebase, Stripe credentials) - NEVER commit this file
+- `.gitignore` - Ensures sensitive files are not committed
+
+## Subscription System Architecture
+
+### Data Flow
+
+**Upgrade Flow:**
+1. User clicks "Upgrade to Pro" → Opens UpgradeModal
+2. Selects monthly/yearly → Calls `/api/stripe/create-checkout`
+3. API creates Stripe Checkout session → Redirects to Stripe
+4. User completes payment → Stripe sends webhook to `/api/stripe/webhook`
+5. Webhook handler updates Firestore (using Admin SDK) → Business upgraded to Pro
+6. User returns to dashboard → Pro features unlocked
+
+**Webhook Events Handled:**
+- `checkout.session.completed` - Upgrades business to Pro tier
+- `customer.subscription.updated` - Updates subscription status/dates
+- `customer.subscription.deleted` - Downgrades business to Free tier
+- `invoice.payment_failed` - Sets subscription status to `past_due`
+
+### Security Architecture
+
+**Client-Side (Security Rules):**
+- Businesses can read their own data
+- Businesses can update safe fields (name, stampCardConfig, logoURL)
+- **Cannot** modify subscription or usage fields (server-only)
+- Prevents tampering with tier limits
+
+**Server-Side (Admin SDK):**
+- Webhooks use Admin SDK (bypasses security rules)
+- Full database access for subscription management
+- Validates Stripe webhook signatures
+- Updates subscription/usage atomically
+
+**API Routes:**
+- No Firestore reads (avoids auth issues)
+- Receives necessary data from authenticated client
+- Calls Stripe API directly
+- Returns session URLs for checkout/portal
