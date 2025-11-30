@@ -17,6 +17,10 @@ import StatsCard from '@/components/business/StatsCard';
 import QRScanner from '@/components/business/QRScanner';
 import RecentActivity from '@/components/business/RecentActivity';
 import BusinessSettings from '@/components/business/BusinessSettings';
+import SubscriptionBadge from '@/components/business/SubscriptionBadge';
+import UpgradeModal from '@/components/business/UpgradeModal';
+import UsageStats from '@/components/business/UsageStats';
+import BillingManagement from '@/components/business/BillingManagement';
 import { LogOut, Users, CreditCard, Award, QrCode, Store, AlertCircle, Settings } from 'lucide-react';
 
 export default function BusinessDashboard() {
@@ -31,6 +35,7 @@ export default function BusinessDashboard() {
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -160,7 +165,20 @@ export default function BusinessDashboard() {
       setTimeout(() => setScanSuccess(null), 3000);
     } catch (error) {
       console.error('Error adding stamp:', error);
-      setScanError(error instanceof Error ? error.message : 'Failed to add stamp');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add stamp';
+
+      // Check for subscription limit errors
+      if (errorMessage === 'LIMIT_MONTHLY_STAMPS' || errorMessage === 'LIMIT_CUSTOMERS') {
+        setShowScanner(false);
+        setShowUpgradeModal(true);
+        setScanError(
+          errorMessage === 'LIMIT_MONTHLY_STAMPS'
+            ? 'Monthly stamp limit reached. Upgrade to Pro for unlimited stamps.'
+            : 'Customer limit reached. Upgrade to Pro for unlimited customers.'
+        );
+      } else {
+        setScanError(errorMessage);
+      }
     }
   };
 
@@ -215,9 +233,12 @@ export default function BusinessDashboard() {
                 <Store className="w-5 h-5 text-white" />
               </div>
             )}
-            <div>
-              <h1 className="text-lg font-bold text-gray-800">{business.name}</h1>
-              <p className="text-sm text-gray-600 capitalize">{business.businessType}</p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h1 className="text-lg font-bold text-gray-800">{business.name}</h1>
+                <p className="text-sm text-gray-600 capitalize">{business.businessType}</p>
+              </div>
+              <SubscriptionBadge business={business} />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -289,6 +310,10 @@ export default function BusinessDashboard() {
           />
         </div>
 
+        {/* Usage Stats (Free tier) and Billing Management (Pro tier) */}
+        <UsageStats business={business} onUpgrade={() => setShowUpgradeModal(true)} />
+        <BillingManagement business={business} />
+
         {/* Scan Button */}
         <button
           onClick={() => setShowScanner(true)}
@@ -319,8 +344,19 @@ export default function BusinessDashboard() {
           business={business}
           onClose={() => setShowSettings(false)}
           onUpdate={handleBusinessUpdate}
+          onUpgrade={() => {
+            setShowSettings(false);
+            setShowUpgradeModal(true);
+          }}
         />
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        business={business}
+      />
     </div>
   );
 }

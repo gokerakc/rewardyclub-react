@@ -29,6 +29,32 @@ export interface BusinessStats {
   totalStampsIssued: number;
 }
 
+// Subscription types
+export type SubscriptionTier = 'free' | 'pro';
+export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'incomplete';
+
+export interface SubscriptionData {
+  tier: SubscriptionTier;
+  status: SubscriptionStatus | null;  // null for free tier
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  stripePriceId: string | null;       // monthly or yearly
+  currentPeriodStart: Timestamp | null;
+  currentPeriodEnd: Timestamp | null;
+  cancelAtPeriodEnd: boolean;
+}
+
+export interface UsageLimits {
+  maxCustomers: number;              // 50 free, -1 pro (unlimited)
+  maxMonthlyStamps: number;          // 500 free, -1 pro (unlimited)
+  currentMonthStamps: number;        // Reset monthly
+  monthStartedAt: Timestamp;         // Track when to reset
+  maxActivityFeedItems: number;      // 10 free, 100 pro
+  canUploadLogo: boolean;            // false free, true pro
+  minStampCardStamps: number;        // 10 free (fixed), 3 pro
+  maxStampCardStamps: number;        // 10 free (fixed), 50 pro
+}
+
 export interface Business {
   id: string;                     // Document ID
   ownerId: string;                // References users.uid
@@ -39,6 +65,8 @@ export interface Business {
   logoURL?: string;               // Firebase Storage URL for business logo
   stampCardConfig: StampCardConfig;
   stats: BusinessStats;
+  subscription: SubscriptionData;    // Subscription tier and status
+  usage: UsageLimits;                // Usage limits based on tier
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;

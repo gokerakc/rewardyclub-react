@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { User, Business, StampCard, Transaction, BusinessStats } from '@/types';
+import { getDefaultSubscription, getDefaultUsage, shouldResetMonthlyStamps, canAddStamp, canAddCustomer } from './subscription';
 
 // ===========================
 // User Management
@@ -134,6 +135,11 @@ export async function getOrCreateStampCard(
       throw new Error('Business not found');
     }
 
+    // Check if business can add more customers (subscription limit)
+    if (!canAddCustomer(business)) {
+      throw new Error('LIMIT_CUSTOMERS');
+    }
+
     const timestamp = Timestamp.now();
     const newCard: Omit<StampCard, 'id'> = {
       userId,
@@ -211,6 +217,32 @@ export async function addStampToCard(
       }
     }
 
+    // Validation: Check monthly stamp limit for subscription tier
+    const businessRef = doc(db, 'businesses', card.businessId);
+    const businessSnap = await getDoc(businessRef);
+
+    if (!businessSnap.exists()) {
+      throw new Error('Business not found');
+    }
+
+    const business = businessSnap.data() as Business;
+
+    // Check if month has reset (30 days passed)
+    if (shouldResetMonthlyStamps(business)) {
+      await updateDoc(businessRef, {
+        'usage.currentMonthStamps': 0,
+        'usage.monthStartedAt': Timestamp.now(),
+      });
+      // Update local business object
+      business.usage.currentMonthStamps = 0;
+      business.usage.monthStartedAt = Timestamp.now();
+    }
+
+    // Check if business can add more stamps this month
+    if (!canAddStamp(business)) {
+      throw new Error('LIMIT_MONTHLY_STAMPS');
+    }
+
     const timestamp = Timestamp.now();
     const newStamp = {
       stampedAt: timestamp,
@@ -237,6 +269,7 @@ export async function addStampToCard(
     // Update business stats
     await updateDoc(doc(db, 'businesses', card.businessId), {
       'stats.totalStampsIssued': increment(1),
+      'usage.currentMonthStamps': increment(1),
     });
 
     // Log transaction
@@ -363,6 +396,8 @@ export async function createBusiness(businessData: Partial<Business>): Promise<s
         activeCards: 0,
         totalStampsIssued: 0,
       },
+      subscription: getDefaultSubscription(),
+      usage: getDefaultUsage(),
       isActive: true,
       createdAt: timestamp,
       updatedAt: timestamp,

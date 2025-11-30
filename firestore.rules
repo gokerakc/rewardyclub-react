@@ -3,17 +3,64 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 12, 24);
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the resource
+    function isOwner(ownerId) {
+      return request.auth.uid == ownerId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own document
+      allow read: if isAuthenticated() && isOwner(userId);
+
+      // Users can create their own document on first login
+      allow create: if isAuthenticated() && isOwner(userId);
+
+      // Users can update their own document (last login time)
+      allow update: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Businesses collection
+    match /businesses/{businessId} {
+      // Business owners can read their own business
+      allow read: if isAuthenticated() && isOwner(resource.data.ownerId);
+
+      // Business owners can create their own business
+      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
+
+      // Business owners can update SAFE fields only (not subscription/usage)
+      allow update: if isAuthenticated()
+        && isOwner(resource.data.ownerId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['subscription', 'usage']);
+
+      // Note: Subscription and usage fields can only be updated by server (webhooks)
+      // Stats updates are allowed for incrementing totalStampsIssued, etc.
+    }
+
+    // Stamp cards collection
+    match /stampCards/{cardId} {
+      // Customers can read their own cards
+      // Business owners can read cards for their business
+      allow read: if isAuthenticated()
+        && (isOwner(resource.data.userId) || isOwner(resource.data.businessId));
+
+      // Cards are created by getOrCreateStampCard (server function)
+      // Updates (adding stamps) are done by addStampToCard (server function)
+    }
+
+    // Transactions collection
+    match /transactions/{transactionId} {
+      // Customers can read their own transactions
+      // Business owners can read transactions for their business
+      allow read: if isAuthenticated()
+        && (isOwner(resource.data.customerId) || isOwner(resource.data.businessId));
+
+      // Transactions are created by server functions only
     }
   }
 }
