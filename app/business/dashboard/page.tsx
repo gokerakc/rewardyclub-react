@@ -156,7 +156,7 @@ export default function BusinessDashboard() {
       const stampCard = await getOrCreateStampCard(customer.uid, business.id);
 
       // Add stamp
-      await addStampToCard(stampCard.id, user!.uid);
+      await addStampToCard(stampCard.id, user!.uid, customer.displayName, customer.memberId);
 
       setScanSuccess(`Stamp added for ${customer.displayName}!`);
       setShowScanner(false);

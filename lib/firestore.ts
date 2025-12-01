@@ -185,7 +185,9 @@ export async function getOrCreateStampCard(
 
 export async function addStampToCard(
   cardId: string,
-  businessOwnerId: string
+  businessOwnerId: string,
+  customerName?: string,
+  memberId?: string
 ): Promise<boolean> {
   try {
     const cardRef = doc(db, 'stampCards', cardId);
@@ -279,7 +281,10 @@ export async function addStampToCard(
       businessId: card.businessId,
       stampCardId: cardId,
       metadata: {
+        customerName: customerName || 'Customer',
+        memberId: memberId || '',
         stampNumber: newStampCount,
+        totalStamps: card.totalStamps,
         isCompleted: isNowCompleted,
       },
       timestamp,

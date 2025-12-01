@@ -27,6 +27,27 @@ const transactionColors = {
   card_created: 'bg-blue-100 text-blue-600',
 };
 
+function getTransactionLabel(transaction: Transaction): string {
+  if (transaction.type === 'stamp_added' && transaction.metadata?.stampNumber) {
+    const { memberId, stampNumber, totalStamps } = transaction.metadata;
+
+    let label = '';
+    if (totalStamps) {
+      label = `Stamp ${stampNumber} of ${totalStamps} added`;
+    } else {
+      label = `Stamp ${stampNumber} added`;
+    }
+
+    // Add member ID for reference (privacy-friendly)
+    if (memberId) {
+      label += ` (MemberId: ${memberId})`;
+    }
+
+    return label;
+  }
+  return transactionLabels[transaction.type] || 'Activity';
+}
+
 export default function RecentActivity({ transactions, loading }: RecentActivityProps) {
   if (loading) {
     return (
@@ -71,10 +92,11 @@ export default function RecentActivity({ transactions, loading }: RecentActivity
         {transactions.map((transaction) => {
           const Icon = transactionIcons[transaction.type] || Plus;
           const colorClass = transactionColors[transaction.type];
-          const label = transactionLabels[transaction.type];
+          const label = getTransactionLabel(transaction);
           const timeAgo = formatDistanceToNow(transaction.timestamp.toDate(), {
             addSuffix: true,
           });
+          const isCompleted = transaction.metadata?.isCompleted;
 
           return (
             <div
@@ -85,16 +107,14 @@ export default function RecentActivity({ transactions, loading }: RecentActivity
                 <Icon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800">{label}</p>
+                <p className="text-sm font-medium text-gray-800">
+                  {label}
+                  {isCompleted && (
+                    <span className="ml-2 text-orange-600">🎉 Card completed!</span>
+                  )}
+                </p>
                 <p className="text-xs text-gray-500">{timeAgo}</p>
               </div>
-              {transaction.metadata?.stampNumber && (
-                <div className="bg-gray-100 rounded-full px-3 py-1">
-                  <span className="text-xs font-semibold text-gray-700">
-                    #{transaction.metadata.stampNumber}
-                  </span>
-                </div>
-              )}
             </div>
           );
         })}
