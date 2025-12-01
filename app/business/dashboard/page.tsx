@@ -167,9 +167,11 @@ export default function BusinessDashboard() {
       console.error('Error adding stamp:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to add stamp';
 
+      // Always close the scanner on error
+      setShowScanner(false);
+
       // Check for subscription limit errors
       if (errorMessage === 'LIMIT_MONTHLY_STAMPS' || errorMessage === 'LIMIT_CUSTOMERS') {
-        setShowScanner(false);
         setShowUpgradeModal(true);
         setScanError(
           errorMessage === 'LIMIT_MONTHLY_STAMPS'
@@ -179,6 +181,9 @@ export default function BusinessDashboard() {
       } else {
         setScanError(errorMessage);
       }
+
+      // Clear error message after 5 seconds
+      setTimeout(() => setScanError(null), 5000);
     }
   };
 

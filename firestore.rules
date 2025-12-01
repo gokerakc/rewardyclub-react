@@ -13,10 +13,16 @@ service cloud.firestore {
       return request.auth.uid == ownerId;
     }
 
+    // Helper function to check if user owns a business
+    function ownsBusiness(businessId) {
+      return exists(/databases/$(database)/documents/businesses/$(businessId))
+        && get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
+    }
+
     // Users collection
     match /users/{userId} {
-      // Users can read their own document
-      allow read: if isAuthenticated() && isOwner(userId);
+      // Any authenticated user can read (needed for member ID lookup during QR scanning)
+      allow read: if isAuthenticated();
 
       // Users can create their own document on first login
       allow create: if isAuthenticated() && isOwner(userId);
@@ -33,13 +39,23 @@ service cloud.firestore {
       // Business owners can create their own business
       allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
 
-      // Business owners can update SAFE fields only (not subscription/usage)
+      // Business owners can update their business
+      // Protect subscription and usage limit fields (server-only)
       allow update: if isAuthenticated()
         && isOwner(resource.data.ownerId)
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['subscription', 'usage']);
-
-      // Note: Subscription and usage fields can only be updated by server (webhooks)
-      // Stats updates are allowed for incrementing totalStampsIssued, etc.
+        && (
+          // Subscription cannot be changed by client
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['subscription'])
+        )
+        && (
+          // If usage not changed, allow any other updates
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['usage'])
+          // If usage changed, ensure limits are not modified
+          || (
+            request.resource.data.usage.maxCustomers == resource.data.usage.maxCustomers
+            && request.resource.data.usage.maxMonthlyStamps == resource.data.usage.maxMonthlyStamps
+          )
+        );
     }
 
     // Stamp cards collection
@@ -47,10 +63,17 @@ service cloud.firestore {
       // Customers can read their own cards
       // Business owners can read cards for their business
       allow read: if isAuthenticated()
-        && (isOwner(resource.data.userId) || isOwner(resource.data.businessId));
+        && (isOwner(resource.data.userId) || ownsBusiness(resource.data.businessId));
 
-      // Cards are created by getOrCreateStampCard (server function)
-      // Updates (adding stamps) are done by addStampToCard (server function)
+      // Business owners can create stamp cards for their business
+      allow create: if isAuthenticated()
+        && request.resource.data.businessId is string
+        && ownsBusiness(request.resource.data.businessId);
+
+      // Business owners can update stamp cards for their business (add stamps)
+      allow update: if isAuthenticated()
+        && resource.data.businessId is string
+        && ownsBusiness(resource.data.businessId);
     }
 
     // Transactions collection
@@ -58,9 +81,12 @@ service cloud.firestore {
       // Customers can read their own transactions
       // Business owners can read transactions for their business
       allow read: if isAuthenticated()
-        && (isOwner(resource.data.customerId) || isOwner(resource.data.businessId));
+        && (isOwner(resource.data.customerId) || ownsBusiness(resource.data.businessId));
 
-      // Transactions are created by server functions only
+      // Business owners can create transactions for their business
+      allow create: if isAuthenticated()
+        && request.resource.data.businessId is string
+        && ownsBusiness(request.resource.data.businessId);
     }
   }
 }

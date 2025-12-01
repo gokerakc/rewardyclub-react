@@ -373,3 +373,77 @@ The `addStampToCard()` function implements these validations:
 - Receives necessary data from authenticated client
 - Calls Stripe API directly
 - Returns session URLs for checkout/portal
+
+## Recent Fixes & Known Issues (Dec 2025)
+
+### Firestore Security Rules - Critical Fixes
+
+The security rules required several important fixes to enable the QR scanning workflow:
+
+1. **User Collection Access** (firestore.rules:25):
+   - Changed from: `allow read: if isOwner(userId)`
+   - Changed to: `allow read: if isAuthenticated()`
+   - **Why**: Businesses need to query users by `memberId` during QR scanning. Without this, `getUserByMemberId()` fails with "Missing or insufficient permissions"
+
+2. **Business Ownership Helper Function** (firestore.rules:17-20):
+   - Added `ownsBusiness(businessId)` helper function
+   - **Critical**: `businessId` in stamp cards/transactions refers to the business **document ID**, not the owner's user ID
+   - Old rules incorrectly used `isOwner(resource.data.businessId)` which would never match
+   - New rules use `ownsBusiness()` to look up the business document and check ownership
+
+3. **Stamp Cards Collection** (firestore.rules:62-77):
+   - Added `allow create` and `allow update` rules for business owners
+   - Uses `ownsBusiness()` to verify the authenticated user owns the business
+   - Without this, `getOrCreateStampCard()` and `addStampToCard()` fail with permissions errors
+
+4. **Transactions Collection** (firestore.rules:80-90):
+   - Added `allow create` rule for business owners
+   - Without this, `logTransaction()` fails silently (doesn't block main operations but no audit trail)
+
+5. **Business Updates** (firestore.rules:44-58):
+   - Modified to allow updates to usage counters while protecting limits
+   - Allows: `usage.currentMonthStamps`, `usage.monthStartedAt`, `stats.*`, safe business fields
+   - Protects: `subscription.*`, `usage.maxCustomers`, `usage.maxMonthlyStamps` (server-only)
+
+### QR Scanner - Duplicate Scan Prevention
+
+Fixed QR scanner continuously processing multiple scans (QRScanner.tsx:32-50):
+
+1. **Synchronous Processing Flag** (line 17, 34-36):
+   - Uses `processingRef.current` (ref, not state) for immediate synchronous check
+   - Prevents race conditions where multiple scans trigger before state updates
+
+2. **Immediate Scanner Stop** (line 43-47):
+   - Scanner stops **before** calling `onScan()` callback
+   - Prevents additional QR detections during async stamp processing
+
+3. **Visual Feedback** (line 131-141):
+   - Shows checkmark + "Processing scan..." overlay immediately
+   - Disabled controls prevent accidental cancellation
+
+4. **Error Handling** (dashboard page.tsx:170-186):
+   - Scanner now closes on **all** errors (cooldown, invalid QR, limits, etc.)
+   - Error messages auto-dismiss after 5 seconds
+   - Subscription limit errors open upgrade modal
+
+### Firestore Undefined Value Prevention
+
+Fixed `undefined` value error when creating stamp cards (firestore.ts:149):
+
+- Changed from: `logoURL: business.logoURL`
+- Changed to: `...(business.logoURL && { logoURL: business.logoURL })`
+- **Why**: Firestore rejects documents with `undefined` values
+- Uses conditional spread to only include `logoURL` field if it exists
+
+### Complete QR Scanning Flow (Now Working)
+
+1. Business clicks "Scan Customer QR Code"
+2. Camera opens, QR code detected
+3. Scanner stops immediately, shows "Processing scan..."
+4. Looks up customer by member ID → `getUserByMemberId()` ✓
+5. Gets or creates stamp card → `getOrCreateStampCard()` ✓
+6. Adds stamp with cooldown check → `addStampToCard()` ✓
+7. Updates business stats and usage counters ✓
+8. Logs transaction → `logTransaction()` ✓
+9. Scanner closes, success message shows
+10. Dashboard updates in real-time via Firestore listeners

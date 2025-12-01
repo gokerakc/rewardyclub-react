@@ -146,7 +146,7 @@ export async function getOrCreateStampCard(
       businessId,
       businessName: business.name,
       businessType: business.businessType,
-      logoURL: business.logoURL,
+      ...(business.logoURL && { logoURL: business.logoURL }),
       totalStamps: business.stampCardConfig.totalStamps,
       currentStamps: 0,
       reward: business.stampCardConfig.reward,
