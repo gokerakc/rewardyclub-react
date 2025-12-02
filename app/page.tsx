@@ -10,14 +10,14 @@ export default function LandingPage() {
       <nav className="border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-2">
+            <div className="bg-linear-to-br from-orange-500 to-orange-600 rounded-lg p-2">
               <QrCode className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-800">Rewardy Club</span>
           </div>
           <Link
             href="/login"
-            className="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all"
+            className="px-6 py-2 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all"
           >
             Sign In
           </Link>
@@ -26,23 +26,23 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="max-w-6xl mx-auto px-4 py-20 text-center">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl mb-6">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-orange-500 to-orange-600 rounded-2xl mb-6">
           <QrCode className="w-10 h-10 text-white" />
         </div>
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-          One Digital Card.
+          One Digital Card
           <br />
-          <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-            Every Reward.
+          <span className="bg-linear-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+            Every Reward
           </span>
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Say goodbye to lost punch cards and hello to rewards in your pocket. Collect stamps from all your favorite local businesses in one place.
+          Say goodbye to lost stamp cards and hello to rewards in your pocket. Collect stamps from all your favorite local businesses in one place.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/login"
-            className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold text-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg flex items-center gap-2"
+            className="px-8 py-4 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold text-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg flex items-center gap-2"
           >
             Get Started Free
             <ArrowRight className="w-5 h-5" />
@@ -57,7 +57,7 @@ export default function LandingPage() {
       </section>
 
       {/* For Customers Section */}
-      <section className="bg-gradient-to-br from-orange-50 to-orange-100 py-20">
+      <section className="bg-linear-to-br from-orange-50 to-orange-100 py-20">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -66,10 +66,10 @@ export default function LandingPage() {
                 <span className="text-sm font-semibold text-orange-700">FOR CUSTOMERS</span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-6">
-                All Your Loyalty Cards in One Place
+                All Your Stamp Cards in One Place
               </h2>
               <p className="text-lg text-gray-600 mb-8">
-                Never lose a punch card again. Track your rewards from coffee shops, restaurants, salons, and more—all from your phone.
+                Never lose a stamp card again. Track your rewards from coffee shops, restaurants, salons, and more—all from your phone.
               </p>
               <div className="space-y-4">
                 {[
@@ -79,14 +79,14 @@ export default function LandingPage() {
                   'Get notified when rewards are ready',
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <CheckCircle className="w-6 h-6 text-orange-600 flex-shrink-0" />
+                    <CheckCircle className="w-6 h-6 text-orange-600 shrink-0" />
                     <span className="text-gray-700">{feature}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="bg-white rounded-2xl shadow-xl p-8">
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white mb-4">
+              <div className="bg-linear-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white mb-4">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
                     <Store className="w-6 h-6" />
@@ -144,7 +144,7 @@ export default function LandingPage() {
                     { icon: Smartphone, title: 'Scan QR Codes', desc: 'Start issuing stamps' },
                   ].map((step, index) => (
                     <div key={index} className="flex items-start gap-4 p-4 bg-orange-50 rounded-xl">
-                      <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-2 flex-shrink-0">
+                      <div className="bg-linear-to-br from-orange-500 to-orange-600 rounded-lg p-2 shrink-0">
                         <step.icon className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -162,7 +162,7 @@ export default function LandingPage() {
                 <span className="text-sm font-semibold text-orange-700">FOR BUSINESSES</span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 mb-6">
-                Boost Loyalty. Effortlessly.
+                Boost Loyalty - Effortlessly
               </h2>
               <p className="text-lg text-gray-600 mb-8">
                 No hardware, no apps to download, no complexity. Just scan QR codes with your phone's camera and watch customer loyalty grow.
@@ -215,7 +215,7 @@ export default function LandingPage() {
               },
             ].map((item, index) => (
               <div key={index} className="bg-white rounded-xl p-8 shadow-md">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl mb-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-br from-orange-500 to-orange-600 rounded-2xl mb-4">
                   <item.icon className="w-8 h-8 text-white" />
                 </div>
                 <div className="text-3xl font-bold text-orange-600 mb-2">{item.step}</div>
@@ -238,7 +238,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold text-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold text-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg"
           >
             Get Started Free
             <ArrowRight className="w-5 h-5" />
