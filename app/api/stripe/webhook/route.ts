@@ -103,7 +103,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const subscriptionId = session.subscription as string;
 
   // Get subscription details
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscriptionResponse = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscription = subscriptionResponse as unknown as Stripe.Subscription;
   const priceId = subscription.items.data[0].price.id;
 
   // Find business by Stripe customer ID or metadata
@@ -123,8 +124,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     'subscription.stripeCustomerId': customerId,
     'subscription.stripeSubscriptionId': subscriptionId,
     'subscription.stripePriceId': priceId,
-    'subscription.currentPeriodStart': admin.firestore.Timestamp.fromMillis(subscription.current_period_start * 1000),
-    'subscription.currentPeriodEnd': admin.firestore.Timestamp.fromMillis(subscription.current_period_end * 1000),
+    'subscription.currentPeriodStart': admin.firestore.Timestamp.fromMillis((subscription as any).current_period_start * 1000),
+    'subscription.currentPeriodEnd': admin.firestore.Timestamp.fromMillis((subscription as any).current_period_end * 1000),
     'subscription.cancelAtPeriodEnd': false,
     'usage': getProUsageForServer(),
     'updatedAt': admin.firestore.Timestamp.now(),
@@ -150,8 +151,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Update subscription status and dates
   await businessRef.update({
     'subscription.status': subscription.status,
-    'subscription.currentPeriodEnd': admin.firestore.Timestamp.fromMillis(subscription.current_period_end * 1000),
-    'subscription.cancelAtPeriodEnd': subscription.cancel_at_period_end,
+    'subscription.currentPeriodEnd': admin.firestore.Timestamp.fromMillis((subscription as any).current_period_end * 1000),
+    'subscription.cancelAtPeriodEnd': (subscription as any).cancel_at_period_end,
     'updatedAt': admin.firestore.Timestamp.now(),
   });
 
