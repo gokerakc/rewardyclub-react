@@ -103,9 +103,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const subscriptionId = session.subscription as string;
 
   // Get subscription details
-  const subscriptionResponse = await stripe.subscriptions.retrieve(subscriptionId);
-  const subscription = subscriptionResponse as unknown as Stripe.Subscription;
-  const priceId = subscription.items.data[0].price.id;
+  const subscriptionData = await stripe.subscriptions.retrieve(subscriptionId) as any;
+  const priceId = subscriptionData.items.data[0].price.id;
 
   // Find business by Stripe customer ID or metadata
   const businessId = session.metadata?.businessId;
@@ -117,6 +116,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const businessRef = adminDb.collection('businesses').doc(businessId);
 
+  // Safely convert Unix timestamps (seconds) to Firestore Timestamps
+  const currentPeriodStart = subscriptionData.current_period_start
+    ? admin.firestore.Timestamp.fromMillis(subscriptionData.current_period_start * 1000)
+    : admin.firestore.Timestamp.now();
+
+  const currentPeriodEnd = subscriptionData.current_period_end
+    ? admin.firestore.Timestamp.fromMillis(subscriptionData.current_period_end * 1000)
+    : admin.firestore.Timestamp.now();
+
   // Update business to Pro tier
   await businessRef.update({
     'subscription.tier': 'pro',
@@ -124,8 +132,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     'subscription.stripeCustomerId': customerId,
     'subscription.stripeSubscriptionId': subscriptionId,
     'subscription.stripePriceId': priceId,
-    'subscription.currentPeriodStart': admin.firestore.Timestamp.fromMillis((subscription as any).current_period_start * 1000),
-    'subscription.currentPeriodEnd': admin.firestore.Timestamp.fromMillis((subscription as any).current_period_end * 1000),
+    'subscription.currentPeriodStart': currentPeriodStart,
+    'subscription.currentPeriodEnd': currentPeriodEnd,
     'subscription.cancelAtPeriodEnd': false,
     'usage': getProUsageForServer(),
     'updatedAt': admin.firestore.Timestamp.now(),
@@ -137,6 +145,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 // Handle subscription updates
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
+  const subscriptionData = subscription as any;
 
   // Find business by Stripe customer ID
   const business = await findBusinessByCustomerId(customerId);
@@ -148,11 +157,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   const businessRef = adminDb.collection('businesses').doc(business.id);
 
+  // Safely convert Unix timestamp to Firestore Timestamp
+  const currentPeriodEnd = subscriptionData.current_period_end
+    ? admin.firestore.Timestamp.fromMillis(subscriptionData.current_period_end * 1000)
+    : admin.firestore.Timestamp.now();
+
   // Update subscription status and dates
   await businessRef.update({
     'subscription.status': subscription.status,
-    'subscription.currentPeriodEnd': admin.firestore.Timestamp.fromMillis((subscription as any).current_period_end * 1000),
-    'subscription.cancelAtPeriodEnd': (subscription as any).cancel_at_period_end,
+    'subscription.currentPeriodEnd': currentPeriodEnd,
+    'subscription.cancelAtPeriodEnd': subscriptionData.cancel_at_period_end || false,
     'updatedAt': admin.firestore.Timestamp.now(),
   });
 
