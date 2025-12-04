@@ -55,9 +55,9 @@ export default function UpgradeModal({ open, onClose, business }: UpgradeModalPr
     { name: 'Active Customers', free: '50', pro: 'Unlimited' },
     { name: 'Monthly Stamps', free: '500', pro: 'Unlimited' },
     { name: 'Active Stamp Cards', free: '100', pro: 'Unlimited' },
-    { name: 'Logo Upload', free: '✗', pro: '✓' },
-    { name: 'Stamp Configuration', free: 'Fixed (10)', pro: 'Custom (3-50)' },
     { name: 'Transaction History', free: 'Last 10', pro: 'Last 100' },
+    { name: 'Logo Upload', free: '✓', pro: '✓' },
+    { name: 'Stamp Configuration', free: 'Custom (3-50)', pro: 'Custom (3-50)' },
     { name: 'Real-time Updates', free: '✓', pro: '✓' },
     { name: 'QR Code Scanning', free: '✓', pro: '✓' },
   ];

@@ -51,9 +51,9 @@ export interface UsageLimits {
   currentMonthStamps: number;        // Reset monthly
   monthStartedAt: Timestamp;         // Track when to reset
   maxActivityFeedItems: number;      // 10 free, 100 pro
-  canUploadLogo: boolean;            // false free, true pro
-  minStampCardStamps: number;        // 10 free (fixed), 3 pro
-  maxStampCardStamps: number;        // 10 free (fixed), 50 pro
+  canUploadLogo: boolean;            // true for both free and pro
+  minStampCardStamps: number;        // 3-50 for both free and pro
+  maxStampCardStamps: number;        // 3-50 for both free and pro
 }
 
 export interface Business {

@@ -83,9 +83,9 @@ export function getDefaultUsage(): UsageLimits {
     currentMonthStamps: 0,
     monthStartedAt: serverTimestamp() as Timestamp,
     maxActivityFeedItems: 10,
-    canUploadLogo: false,
-    minStampCardStamps: 10,
-    maxStampCardStamps: 10,
+    canUploadLogo: true,
+    minStampCardStamps: 3,
+    maxStampCardStamps: 50,
   };
 }
 

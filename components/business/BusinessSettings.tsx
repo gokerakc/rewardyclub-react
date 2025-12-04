@@ -257,14 +257,8 @@ export default function BusinessSettings({
             <div className="space-y-4">
               {/* Number of Stamps */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Number of Stamps Required
-                  {business.subscription.tier === 'free' && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-                      <Crown className="w-3 h-3" />
-                      Pro
-                    </span>
-                  )}
                 </label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -275,26 +269,12 @@ export default function BusinessSettings({
                     value={totalStamps}
                     onChange={(e) => setTotalStamps(parseInt(e.target.value) || getStampConfigLimits(business).min)}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all text-gray-900"
-                    disabled={saving || business.subscription.tier === 'free'}
+                    disabled={saving}
                   />
                 </div>
-                {business.subscription.tier === 'free' ? (
-                  <p className="text-xs text-orange-600 mt-1">
-                    Free plan is fixed at 10 stamps. Upgrade to Pro to customize between 3-50 stamps.
-                    {onUpgrade && (
-                      <button
-                        onClick={onUpgrade}
-                        className="ml-1 underline hover:text-orange-700"
-                      >
-                        Upgrade now
-                      </button>
-                    )}
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Choose between 3 and 50 stamps
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Choose between 3 and 50 stamps
+                </p>
               </div>
 
               {/* Reward */}

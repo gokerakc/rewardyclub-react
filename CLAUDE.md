@@ -239,7 +239,8 @@ Components are organized by feature:
 - QR Code Scanning (unlimited)
 - 50 customers maximum
 - 500 monthly stamps
-- Fixed 10 stamps per card
+- Custom logo upload (Firebase Storage, max 2MB)
+- Configurable stamp count (3-50 stamps)
 - Last 10 transactions visible
 - Basic analytics dashboard
 

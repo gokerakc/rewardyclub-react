@@ -103,11 +103,11 @@ export default function BillingManagement({ business }: BillingManagementProps) 
           </div>
         )}
 
-        {/* Next Billing Date */}
+        {/* Subscription Active Until */}
         {business.subscription.currentPeriodEnd && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600 dark:text-gray-400">
-              {business.subscription.cancelAtPeriodEnd ? 'Expires on:' : 'Next billing date:'}
+              {business.subscription.cancelAtPeriodEnd ? 'Expires on:' : 'Subscription active until:'}
             </span>
             <span className="font-medium text-gray-900 dark:text-white">
               {formatDate(business.subscription.currentPeriodEnd)}
