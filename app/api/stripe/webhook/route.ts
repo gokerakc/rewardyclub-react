@@ -83,6 +83,12 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handlePaymentSucceeded(invoice);
+        break;
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -116,15 +122,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const businessRef = adminDb.collection('businesses').doc(businessId);
 
-  // Safely convert Unix timestamps (seconds) to Firestore Timestamps
-  const currentPeriodStart = subscriptionData.current_period_start
-    ? admin.firestore.Timestamp.fromMillis(subscriptionData.current_period_start * 1000)
-    : admin.firestore.Timestamp.now();
-
-  const currentPeriodEnd = subscriptionData.current_period_end
-    ? admin.firestore.Timestamp.fromMillis(subscriptionData.current_period_end * 1000)
-    : admin.firestore.Timestamp.now();
-
   // Update business to Pro tier
   await businessRef.update({
     'subscription.tier': 'pro',
@@ -132,20 +129,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     'subscription.stripeCustomerId': customerId,
     'subscription.stripeSubscriptionId': subscriptionId,
     'subscription.stripePriceId': priceId,
-    'subscription.currentPeriodStart': currentPeriodStart,
-    'subscription.currentPeriodEnd': currentPeriodEnd,
     'subscription.cancelAtPeriodEnd': false,
     'usage': getProUsageForServer(),
     'updatedAt': admin.firestore.Timestamp.now(),
   });
-
-  console.log(`Business ${businessId} upgraded to Pro`);
 }
+
 
 // Handle subscription updates
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
-  const subscriptionData = subscription as any;
 
   // Find business by Stripe customer ID
   const business = await findBusinessByCustomerId(customerId);
@@ -157,20 +150,28 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   const businessRef = adminDb.collection('businesses').doc(business.id);
 
-  // Safely convert Unix timestamp to Firestore Timestamp
-  const currentPeriodEnd = subscriptionData.current_period_end
-    ? admin.firestore.Timestamp.fromMillis(subscriptionData.current_period_end * 1000)
+    // Safely convert Unix timestamps (seconds) to Firestore Timestamps
+  const currentPeriodStart = subscription.items.data[0].current_period_start
+    ? admin.firestore.Timestamp.fromMillis(subscription.items.data[0].current_period_start * 1000)
     : admin.firestore.Timestamp.now();
+
+  const currentPeriodEnd = subscription.items.data[0].current_period_end
+    ? admin.firestore.Timestamp.fromMillis(subscription.items.data[0].current_period_end * 1000)
+    : null;
+
+  const cancelAt = subscription.cancel_at
+    ? admin.firestore.Timestamp.fromMillis(subscription.cancel_at * 1000)
+    : null;
 
   // Update subscription status and dates
   await businessRef.update({
     'subscription.status': subscription.status,
+    'subscription.currentPeriodStart': currentPeriodStart,
     'subscription.currentPeriodEnd': currentPeriodEnd,
-    'subscription.cancelAtPeriodEnd': subscriptionData.cancel_at_period_end || false,
+    'subscription.cancelAtPeriodEnd': subscription.cancel_at_period_end || false,
+    'subscription.cancelAt': cancelAt,
     'updatedAt': admin.firestore.Timestamp.now(),
   });
-
-  console.log(`Business ${business.id} subscription updated: ${subscription.status}`);
 }
 
 // Handle subscription cancellation
@@ -192,11 +193,10 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     'subscription.tier': 'free',
     'subscription.status': 'canceled',
     'subscription.cancelAtPeriodEnd': false,
+    'subscription.cancelAt': null,
     'usage': getDefaultUsageForServer(),
     'updatedAt': admin.firestore.Timestamp.now(),
   });
-
-  console.log(`Business ${business.id} downgraded to Free tier`);
 }
 
 // Handle payment failures
@@ -218,8 +218,38 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     'subscription.status': 'past_due',
     'updatedAt': admin.firestore.Timestamp.now(),
   });
+}
 
-  console.log(`Business ${business.id} payment failed, status: past_due`);
+// Handle successful payment
+async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  const customerId = invoice.customer as string;
+
+  // Find business by Stripe customer ID
+  const business = await findBusinessByCustomerId(customerId);
+
+  if (!business) {
+    console.error(`No business found for customer ${customerId}`);
+    return;
+  }
+
+  const businessRef = adminDb.collection('businesses').doc(business.id);
+
+  // Get the billing period from the invoice
+  const periodStart = invoice.lines.data[0].period.start
+    ? admin.firestore.Timestamp.fromMillis(invoice.lines.data[0].period.start * 1000)
+    : null;
+
+  const periodEnd = invoice.lines.data[0].period.end
+    ? admin.firestore.Timestamp.fromMillis(invoice.lines.data[0].period.end * 1000)
+    : null;
+
+  // Update subscription with correct billing period
+  await businessRef.update({
+    'subscription.status': 'active',
+    'subscription.currentPeriodStart': periodStart,
+    'subscription.currentPeriodEnd': periodEnd,
+    'updatedAt': admin.firestore.Timestamp.now(),
+  });
 }
 
 // Helper function to find business by Stripe customer ID
