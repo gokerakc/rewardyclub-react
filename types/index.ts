@@ -42,6 +42,7 @@ export interface SubscriptionData {
   currentPeriodStart: Timestamp | null;
   currentPeriodEnd: Timestamp | null;
   cancelAtPeriodEnd: boolean;
+  cancelAt: Timestamp | null;         // Actual cancellation date (when cancel_at_period_end is true)
 }
 
 export interface UsageLimits {

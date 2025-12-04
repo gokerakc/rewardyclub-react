@@ -71,6 +71,7 @@ export function getDefaultSubscription(): SubscriptionData {
     currentPeriodStart: null,
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
+    cancelAt: null,
   };
 }
 

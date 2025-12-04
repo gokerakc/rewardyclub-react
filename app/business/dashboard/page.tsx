@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import {
   getBusinessByOwnerId,
@@ -45,25 +45,54 @@ export default function BusinessDashboard() {
     }
   }, [user, authLoading, router]);
 
-  const fetchBusiness = async () => {
+  // Set up real-time listener for business data
+  useEffect(() => {
     if (!user) return;
 
-    try {
-      const businessData = await getBusinessByOwnerId(user.uid);
-      if (businessData) {
-        setBusiness(businessData);
-      } else {
-        setShowOnboarding(true);
-      }
-    } catch (error) {
-      console.error('Error fetching business:', error);
-    } finally {
-      setBusinessLoading(false);
-    }
-  };
+    let unsubscribeBusiness: (() => void) | undefined;
 
-  useEffect(() => {
-    fetchBusiness();
+    const setupBusinessListener = async () => {
+      try {
+        // First, get the business ID (one-time lookup)
+        const businessData = await getBusinessByOwnerId(user.uid);
+
+        if (!businessData) {
+          setShowOnboarding(true);
+          setBusinessLoading(false);
+          return;
+        }
+
+        // Set initial data
+        setBusiness(businessData);
+        setBusinessLoading(false);
+
+        // Then set up real-time listener for updates (like subscription changes from webhooks)
+        const businessRef = doc(db, 'businesses', businessData.id);
+        unsubscribeBusiness = onSnapshot(
+          businessRef,
+          (snapshot) => {
+            if (snapshot.exists()) {
+              setBusiness({ id: snapshot.id, ...snapshot.data() } as Business);
+            }
+          },
+          (error) => {
+            console.error('Error listening to business updates:', error);
+          }
+        );
+      } catch (error) {
+        console.error('Error setting up business listener:', error);
+        setBusinessLoading(false);
+      }
+    };
+
+    setupBusinessListener();
+
+    // Cleanup listener on unmount
+    return () => {
+      if (unsubscribeBusiness) {
+        unsubscribeBusiness();
+      }
+    };
   }, [user]);
 
   useEffect(() => {
@@ -106,8 +135,7 @@ export default function BusinessDashboard() {
   };
 
   const handleBusinessUpdate = async () => {
-    // Refetch business data from Firestore to ensure we have the latest data
-    await fetchBusiness();
+    // No need to manually refetch - the real-time listener will automatically update
   };
 
   const handleCreateBusiness = async () => {
